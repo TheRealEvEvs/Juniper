@@ -15,7 +15,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import httpx
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+loggingdasfadsfasdfasdfasdfasdfasdfasdfasdfasdf.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("juniper")
 
 # ── Config from environment variables (set in Railway dashboard) ──────────────
