@@ -1,9 +1,8 @@
 """
 Juniper Backend — with in-memory storage
-Both the website mic AND the Windows agent push here.
-The website polls /todos and /events to get new items.
+Uses direct HTTP calls to Gemini API (no library issues)
 """
-import json, logging, os
+import json, logging, os, httpx
 from datetime import datetime
 from collections import deque
 from typing import List
@@ -11,14 +10,12 @@ from typing import List
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("juniper")
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-genai.configure(api_key=GEMINI_API_KEY)
-gemini = genai.GenerativeModel("gemini-2.0-flash-exp")
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
 _todos: List[dict] = []
 _events: List[dict] = []
@@ -84,8 +81,10 @@ def run_juniper(context: list):
     prompt += f"\n\nRecent context:\n" + "\n".join(lines) + "\n\nShould I take any action?"
 
     try:
-        resp = gemini.generate_content(prompt)
-        raw = resp.text.strip()
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        r = httpx.post(GEMINI_URL, json=payload, timeout=30)
+        r.raise_for_status()
+        raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
@@ -136,7 +135,7 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "online", "ai": "Juniper (Gemini 1.5 Flash)"}
+    return {"status": "online", "ai": "Juniper (Gemini 2.0 Flash)"}
 
 @app.post("/process")
 async def process(req: ProcessRequest, bg: BackgroundTasks):
@@ -171,3 +170,11 @@ async def delete_event(eid: int):
     global _events
     _events = [e for e in _events if e["id"] != eid]
     return {"ok": True}
+```
+
+Also update `requirements.txt` to remove the google library entirely:
+```
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+pydantic==2.8.2
