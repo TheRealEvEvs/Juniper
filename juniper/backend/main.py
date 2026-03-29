@@ -18,7 +18,7 @@ log = logging.getLogger("juniper")
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
-gemini = genai.GenerativeModel("gemini-1.5-flash-latest")
+gemini = genai.GenerativeModel("gemini-2.0-flash-exp")
 
 _todos: List[dict] = []
 _events: List[dict] = []
